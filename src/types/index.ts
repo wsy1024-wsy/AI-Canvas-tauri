@@ -6,6 +6,7 @@ import type { AudioGenerationPurpose } from './media';
 import type { ImageAnnotationLayer } from '@tenney95/xiaoluo-image-editor';
 import type { CanvasNoteData } from './canvasNote';
 import type { ShotlistColumnKey, ShotRow } from './shotlist';
+import type { Locale } from '../i18n';
 
 export type {
   CanvasDrawingTool,
@@ -367,6 +368,8 @@ export interface ProviderModelSelection {
   executionProfile?: ModelExecutionProfile;
   /** 图片模型存在参考图时使用的请求协议；缺省保持 generations JSON 兼容方式。 */
   imageReferenceRequestMode?: ImageReferenceRequestMode;
+  /** 视频模型的参数能力声明（时长/分辨率/比例/参考素材等），缺省走通用兜底。 */
+  videoCapability?: VideoModelCapability;
 }
 
 export interface ApiProviderConfig {
@@ -463,6 +466,7 @@ export interface AppConfig {
   /** 当前用于 Agent 联网搜索的厂商；旧配置未设置时优先沿用 Tavily。 */
   webSearchProviderId?: WebSearchProviderId;
   theme: 'dark' | 'light';
+  language?: Locale; // 界面语言，未设置时跟随系统
   canvasBackground?: CanvasBackground; // 画布背景主题
   interactionMode?: InteractionMode; // 画布交互模式，默认 'default'
   nodeToolbarMode?: NodeToolbarMode; // 节点顶部工具栏显示方式，默认 'icons'
@@ -481,6 +485,7 @@ export interface AppConfig {
   generalModels?: GeneralModelConfig[]; // 用户自建通用模型
   sidebarFloating?: boolean;  // 侧边栏是否悬浮显示（半隐于窗口边缘），默认 true
   windowGlassFrame?: boolean; // 是否显示主窗口玻璃外框，默认 true
+  graphicsCompatibilityMode?: boolean; // 图形兼容模式：关闭毛玻璃并使用实色窗口背景，默认 false
   titlebarFloating?: boolean; // 标题栏是否悬浮显示（macOS 红绿灯内移并带毛玻璃胶囊），默认 true
   mascotVisible?: boolean;   // 是否显示吉祥物，默认 false
   mascotPosition?: MascotPosition; // 吉祥物相对视口位置，未设置时使用右下角默认位置

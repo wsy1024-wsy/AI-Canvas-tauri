@@ -18,6 +18,7 @@ import {
 import * as fileService from '../services/fileService';
 import { setBaseDataDir, syncAuthorizedDirectories } from '../services/fileService';
 import { deleteProviderSecret } from '../services/providerSecretService';
+import { setLocale } from '../i18n';
 
 const defaultConfig: AppConfig = {
   providers: {},
@@ -31,6 +32,8 @@ const defaultConfig: AppConfig = {
   nodeToolbarMode: 'icons',
   nodeLabelVisible: true,
   startupView: 'last-project',
+  graphicsCompatibilityMode: false,
+  // language 不给默认值：未设置时按系统语言判定
 };
 
 const MODEL_PREF_KEY = 'canvas-model-prefs';
@@ -43,6 +46,11 @@ function syncNodeToolbarMode(mode: AppConfig['nodeToolbarMode']): void {
 function syncNodeLabelVisible(visible: AppConfig['nodeLabelVisible']): void {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.nodeLabelVisible = visible === false ? 'false' : 'true';
+}
+
+function syncGraphicsCompatibilityMode(enabled: AppConfig['graphicsCompatibilityMode']): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.toggleAttribute('data-graphics-compatibility', enabled === true);
 }
 
 interface RemovedModelReferences {
@@ -332,6 +340,12 @@ export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (s
     if ('nodeLabelVisible' in partial) {
       syncNodeLabelVisible(partial.nodeLabelVisible);
     }
+    if ('graphicsCompatibilityMode' in partial) {
+      syncGraphicsCompatibilityMode(partial.graphicsCompatibilityMode);
+    }
+    if ('language' in partial) {
+      setLocale(partial.language);
+    }
   },
 
   setProviderKey: (providerName, key) =>
@@ -533,6 +547,8 @@ export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (s
     if (!saved) {
       syncNodeToolbarMode(defaultConfig.nodeToolbarMode);
       syncNodeLabelVisible(defaultConfig.nodeLabelVisible);
+      syncGraphicsCompatibilityMode(defaultConfig.graphicsCompatibilityMode);
+      setLocale(defaultConfig.language);
       set({ configHydrated: true });
       return;
     }
@@ -540,6 +556,8 @@ export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (s
     const cfg = migrateLegacyGeneralModels({ ...defaultConfig, ...(saved as AppConfig) });
     syncNodeToolbarMode(cfg.nodeToolbarMode);
     syncNodeLabelVisible(cfg.nodeLabelVisible);
+    syncGraphicsCompatibilityMode(cfg.graphicsCompatibilityMode);
+    setLocale(cfg.language);
     set({ config: cfg, configHydrated: true });
     if (missingSecrets.length > 0) {
       console.warn('[设置] 凭据存储中缺少以下连接的凭据:', missingSecrets);

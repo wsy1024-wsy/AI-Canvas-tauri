@@ -2,6 +2,7 @@ import type { Node } from '@xyflow/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   annotateCharacterReferences,
+  assertVideoReferenceLimits,
   buildGeneralVideoProtocolVariables,
   generateVideo,
   resolveVideoGenerationOperation,
@@ -634,5 +635,54 @@ describe('general video protocol variables', () => {
     // 独立字段仍按顺序推断，两种传参方式并存，由协议模板决定用哪个
     expect(variables.firstImage).toBe('https://cdn.example/first.png');
     expect(variables.lastImage).toBe('https://cdn.example/last.png');
+  });
+});
+
+describe('video reference limits', () => {
+  const input = (counts: { image?: number; video?: number; audio?: number }) => ({
+    prompt: 'prompt',
+    imageUrls: Array.from({ length: counts.image ?? 0 }, (_, i) => `https://cdn.example/i${i}.png`),
+    videoUrls: Array.from({ length: counts.video ?? 0 }, (_, i) => `https://cdn.example/v${i}.mp4`),
+    audioUrls: Array.from({ length: counts.audio ?? 0 }, (_, i) => `https://cdn.example/a${i}.mp3`),
+    operation: 'image-to-video' as const,
+  });
+
+  it('rejects reference media beyond what the model declared', () => {
+    const capability = { maxImageReferences: 9, maxVideoReferences: 0, maxAudioReferences: 0 };
+    expect(() => assertVideoReferenceLimits(input({ image: 12 }), capability, 'Seedance 900'))
+      .toThrow('模型 "Seedance 900" 最多支持 9 个参考图，当前有 12 个');
+    expect(() => assertVideoReferenceLimits(input({ image: 1, video: 1 }), capability, 'Seedance 900'))
+      .toThrow('不支持参考视频');
+    // 正好到上限不拦
+    expect(() => assertVideoReferenceLimits(input({ image: 9 }), capability, 'Seedance 900')).not.toThrow();
+  });
+
+  it('未声明上限的模型保持原有的不拦截行为', () => {
+    expect(() => assertVideoReferenceLimits(input({ image: 30, video: 5 }), undefined, 'X')).not.toThrow();
+    expect(() => assertVideoReferenceLimits(input({ image: 30 }), { maxDuration: 15 }, 'X')).not.toThrow();
+  });
+});
+
+describe('离散时长吸附', () => {
+  const build = (seedanceDuration: number, capability?: { durations?: number[]; maxDuration?: number }) =>
+    buildGeneralVideoProtocolVariables(
+      'lec-ac-seedance-900-720p',
+      { model: 'general/relay', provider: 'general', prompt: 'p', seedanceDuration },
+      { prompt: 'p', imageUrls: [], videoUrls: [], audioUrls: [], operation: 'text-to-video' },
+      capability,
+    ).duration;
+
+  it('画布上的 4 秒吸附到模型允许的最近档，而不是原样发出', () => {
+    // 文档：仅支持 10 或 15 秒
+    expect(build(4, { durations: [10, 15] })).toBe(10);
+    expect(build(13, { durations: [10, 15] })).toBe(15);
+    expect(build(15, { durations: [10, 15] })).toBe(15);
+    // 固定时长写成单元素数组
+    expect(build(4, { durations: [15] })).toBe(15);
+  });
+
+  it('没声明离散档位时保持原有的范围钳制', () => {
+    expect(build(8, { maxDuration: 15 })).toBe(8);
+    expect(build(8)).toBe(8);
   });
 });

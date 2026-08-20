@@ -207,9 +207,9 @@
 
   /* Duration scale / 时长阶梯 */
   --dur-instant: 100ms;
-  --dur-fast: 150ms;
-  --dur-normal: 200ms;
-  --dur-slow: 300ms;
+  --dur-fast: 135ms;
+  --dur-normal: 180ms;
+  --dur-slow: 260ms;
 
   /* Composite transitions (most common patterns) / 组合过渡（最常用模式） */
   --transition-base: var(--dur-fast) var(--ease-out-expo);
@@ -680,6 +680,29 @@ html, body, #root {
     sans-serif;
 }
 
+/* 图形兼容模式：避开部分 Windows / WebView2 显卡驱动上的背景滤镜合成异常。
+   保留 Canvas、视频和 3D 的 GPU 加速，只将毛玻璃表面降级为不透明实色。 */
+html[data-graphics-compatibility] {
+  --glass-bg: var(--theme-surface);
+  --glass-bg-light: var(--theme-surface);
+  --glass-bg-node: var(--theme-card);
+  --glass-panel-bg: var(--theme-surface);
+  --floating-surface-bg: var(--theme-surface);
+}
+
+html[data-graphics-compatibility],
+html[data-graphics-compatibility] body,
+html[data-graphics-compatibility] #root {
+  background: var(--theme-bg);
+}
+
+html[data-graphics-compatibility] *,
+html[data-graphics-compatibility] *::before,
+html[data-graphics-compatibility] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* macOS 默认次像素渲染偏粗，灰度抗锯齿更接近系统观感；
    Windows 相反——antialiased 会关掉 ClearType，1x DPI 下小号中文糊成一团。 */
 html:not([data-os='windows']),
@@ -965,11 +988,6 @@ select option:disabled {
   to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--brand-alpha-20); }
-  50% { box-shadow: 0 0 20px 4px var(--brand-alpha-10); }
-}
-
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1004,11 +1022,6 @@ select option:disabled {
 
 .fade-in { animation-name: fadeIn; }
 .zoom-in-95 { animation-name: zoomIn95; }
-
-/* Node loading glow / 节点加载辉光 */
-.node-loading .react-flow__node {
-  animation: pulse-glow 2s var(--ease-in-out) infinite;
-}
 
 /* Content Editable styles / 可编辑内容样式 */
 [contenteditable]:hover {
