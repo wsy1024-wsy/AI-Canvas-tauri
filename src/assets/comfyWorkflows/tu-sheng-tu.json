@@ -30,7 +30,7 @@
   },
   "67": {
     "inputs": {
-      "text": "photorealistic, 3d render, hyperrealistic digital human, 1girl, east asian face, japanese cute girl, delicate baby face, young and petite, blonde twin tails, maid headdress, heterochromia, red right eye, blue left eye, long eyelashes, black and white maid outfit, holding plush rabbit doll, sitting, detailed realistic skin, subsurface scattering, soft cinematic lighting, ultra detailed, 8k, shallow depth of field",
+      "text": "(photorealistic:1.2), (3d render:1.1), hyperrealistic digital human, 1girl, (east asian face:1.3), (japanese cute girl:1.2), delicate baby face, young and petite, blonde twin tails, maid headdress, heterochromia, red right eye, blue left eye, long eyelashes, black and white maid outfit, holding plush rabbit doll, sitting, detailed realistic skin, subsurface scattering, soft cinematic lighting, ultra detailed, 8k, shallow depth of field",
       "clip": [
         "75",
         1
@@ -45,10 +45,10 @@
     "inputs": {
       "seed": 42,
       "steps": 25,
-      "cfg": 7.5,
+      "cfg": 8,
       "sampler_name": "dpmpp_2m_sde_gpu",
       "scheduler": "karras",
-      "denoise": 0.6,
+      "denoise": 0.72,
       "model": [
         "75",
         0
@@ -73,7 +73,7 @@
   },
   "71": {
     "inputs": {
-      "text": "anime, manga, cartoon, 2d, illustration, painting, hand drawn, low quality, bad anatomy, deformed, extra limbs, missing fingers, ugly, blurry, grainy, plastic skin, oversmoothed skin, text, watermark, distorted face, asymmetrical face，caucasian, western face, mature face, old, sharp facial features, deep facial contours",
+      "text": "anime, manga, cartoon, 2d, illustration, painting, hand drawn, low quality, bad anatomy, deformed, extra limbs, missing fingers, ugly, blurry, grainy, plastic skin, oversmoothed skin, text, watermark, distorted face, asymmetrical face, caucasian, western face, mature face, old, sharp facial features, deep facial contours",
       "clip": [
         "75",
         1
