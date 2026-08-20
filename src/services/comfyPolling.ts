@@ -17,8 +17,8 @@ const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
  */
 export function normalizeComfyUrl(url: string): string {
   if (isTauri) return url;
-  // Vite dev proxy: http://127.0.0.1:8188/xxx → /api/comfyui/xxx
-  return url.replace(/^https?:\/\/127\.0\.0\.1:\d+/, '/api/comfyui');
+  // Vite dev proxy: 把 ComfyUI 地址统一代理到 /api/comfyui，绕过浏览器 CORS
+  return url.replace(/^https?:\/\/[^/]+/, '/api/comfyui');
 }
 
 /**

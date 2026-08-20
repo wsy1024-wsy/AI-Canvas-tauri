@@ -2,7 +2,7 @@
  * 内置 ComfyUI 工作流 —— 首次启动时写进「工作流管理」，之后就是普通工作流（可改可删）。
  * 已播种的 id 记在 localStorage 里，删掉的不会自动恢复，新加的下次启动自动补上。
  */
-import type { WorkflowDefinition, WorkflowIONodeType } from '../types';
+import type { WorkflowCategory, WorkflowDefinition, WorkflowIONodeType } from '../types';
 import { extractComfyUIIONodes } from './comfyUIWindowService';
 const WORKFLOW_FILES = import.meta.glob('../assets/comfyWorkflows/*.json', {
   query: '?raw',
@@ -34,46 +34,32 @@ interface BuiltInWorkflowSpec {
   id: string;
   name: string;
   fileName: string;
+  category: WorkflowCategory;
   /** 用户没 @ 具体节点时，提示词与参考媒体默认送进这些节点 */
   defaultNodes: Partial<Record<WorkflowIONodeType, string>>;
 }
 
 const BUILT_IN_SPECS: BuiltInWorkflowSpec[] = [
   {
-    id: 'builtin-minimax-h3-t2v',
-    name: 'MiniMax H3 文生视频',
-    fileName: 'minimax-h3-t2v.json',
-    defaultNodes: { prompt: '105:104' },
+    id: 'builtin-wen-sheng-tu',
+    name: '文生图',
+    fileName: 'wen-sheng-tu.json',
+    category: 'ai-image',
+    defaultNodes: { prompt: '6' },
   },
   {
-    id: 'builtin-minimax-h3-i2v',
-    name: 'MiniMax H3 图生视频',
-    fileName: 'minimax-h3-i2v.json',
-    defaultNodes: { prompt: '105:104', image: '114' },
+    id: 'builtin-tu-sheng-tu',
+    name: '图生图',
+    fileName: 'tu-sheng-tu.json',
+    category: 'ai-image',
+    defaultNodes: { prompt: '67', image: '72' },
   },
   {
-    id: 'builtin-minimax-h3-r2v',
-    name: 'MiniMax H3 参考生视频',
-    fileName: 'minimax-h3-r2v.json',
-    defaultNodes: { prompt: '138', image: '137' },
-  },
-  {
-    id: 'builtin-minimax-h3-t2v-turbo',
-    name: 'MiniMax H3 文生视频（Turbo 加速）',
-    fileName: 'minimax-h3-t2v-turbo.json',
-    defaultNodes: { prompt: '130' },
-  },
-  {
-    id: 'builtin-minimax-h3-i2v-turbo',
-    name: 'MiniMax H3 图生视频（Turbo 加速）',
-    fileName: 'minimax-h3-i2v-turbo.json',
-    defaultNodes: { prompt: '132', image: '114' },
-  },
-  {
-    id: 'builtin-minimax-h3-r2v-turbo',
-    name: 'MiniMax H3 参考生视频（Turbo 加速）',
-    fileName: 'minimax-h3-r2v-turbo.json',
-    defaultNodes: { prompt: '138', image: '169', video: '167' },
+    id: 'builtin-wen-sheng-shi-pin',
+    name: '文生视频',
+    fileName: 'wen-sheng-shi-pin.json',
+    category: 'ai-video',
+    defaultNodes: { prompt: '6' },
   },
 ];
 
@@ -82,7 +68,7 @@ function toWorkflowDefinition(spec: BuiltInWorkflowSpec, createdAt: number): Wor
   return {
     id: spec.id,
     name: spec.name,
-    category: 'ai-video',
+    category: spec.category,
     fileName: spec.fileName,
     fileContent,
     editableContent: readWorkflowUiFile(spec.fileName),
@@ -116,22 +102,57 @@ function readSeededIds(): string[] {
 }
 
 /**
- * 返回本次启动需要补进工作流列表的内置工作流。
- * 逐个记账而不是打一个总开关：中途出错下次还能补上，用户删掉的也不会自己长回来。
+ * 返回需要从持久化中清理掉的旧内置工作流 id。
+ * 当 BUILT_IN_SPECS 里删掉某个内置工作流后，本地 IndexedDB 里可能还留着旧数据，
+ * 启动时用它把这类过时内置工作流自动移除（不会碰用户自己导入的工作流）。
  */
-export function pendingBuiltInWorkflows(existing: WorkflowDefinition[]): WorkflowDefinition[] {
+export function obsoleteBuiltInWorkflowIds(existing: WorkflowDefinition[]): string[] {
+  const validIds = new Set(BUILT_IN_SPECS.map((spec) => spec.id));
+  return existing
+    .filter((workflow) => workflow.id.startsWith('builtin-') && !validIds.has(workflow.id))
+    .map((workflow) => workflow.id);
+}
+
+/**
+ * 同步内置工作流：首次启动补种，文件内容变化时更新本地持久化。
+ * 返回需要新增和更新的工作流，由调用方负责落盘。
+ */
+export function syncBuiltInWorkflows(existing: WorkflowDefinition[]): {
+  toAdd: WorkflowDefinition[];
+  toUpdate: WorkflowDefinition[];
+} {
   const seededIds = readSeededIds();
-  const skip = new Set([...seededIds, ...existing.map((workflow) => workflow.id)]);
+  const existingMap = new Map(existing.map((workflow) => [workflow.id, workflow]));
   const createdAt = Date.now();
-  // 先建好再记账：readWorkflowFile 抛错时这一批下次重来
-  const pending = BUILT_IN_SPECS
-    .filter((spec) => !skip.has(spec.id))
-    .map((spec) => toWorkflowDefinition(spec, createdAt));
-  if (pending.length > 0) {
+  const toAdd: WorkflowDefinition[] = [];
+  const toUpdate: WorkflowDefinition[] = [];
+
+  for (const spec of BUILT_IN_SPECS) {
+    const current = toWorkflowDefinition(spec, createdAt);
+    const old = existingMap.get(spec.id);
+    if (!old) {
+      if (!seededIds.includes(spec.id)) {
+        toAdd.push(current);
+      }
+    } else if (old.fileContent !== current.fileContent) {
+      // 内置工作流文件内容变了，同步更新本地数据（保留创建时间）
+      toUpdate.push({ ...current, createdAt: old.createdAt });
+    }
+  }
+
+  if (toAdd.length > 0) {
     localStorage.setItem(
       SEEDED_IDS_KEY,
-      JSON.stringify([...seededIds, ...pending.map((workflow) => workflow.id)]),
+      JSON.stringify([...seededIds, ...toAdd.map((workflow) => workflow.id)]),
     );
   }
-  return pending;
+  return { toAdd, toUpdate };
+}
+
+/**
+ * 返回本次启动需要补进工作流列表的内置工作流。
+ * @deprecated 使用 syncBuiltInWorkflows 替代，它会同时处理文件更新。
+ */
+export function pendingBuiltInWorkflows(existing: WorkflowDefinition[]): WorkflowDefinition[] {
+  return syncBuiltInWorkflows(existing).toAdd;
 }

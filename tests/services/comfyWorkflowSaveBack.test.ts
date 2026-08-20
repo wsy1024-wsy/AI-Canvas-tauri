@@ -25,7 +25,7 @@ import { initComfyUIWindowBridge } from '../../src/services/comfyUIWindowService
 
 /** ComfyUI 存回来的两份 JSON：API 格式用来跑，界面格式用来还原布局 */
 const API_JSON = JSON.stringify({
-  '105:104': { class_type: 'CLIPTextEncode', inputs: { text: '改过的提示词' }, _meta: { title: '提示词' } },
+  '6': { class_type: 'MiniMaxH3AudioConditioningT8', inputs: { prompt: '改过的提示词' }, _meta: { title: 'MiniMax H3 Audio Conditioning (T8)' } },
 });
 const EDITABLE_JSON = JSON.stringify({ nodes: [{ id: 1 }] });
 
@@ -33,9 +33,9 @@ function savePayload(workflowId: unknown) {
   return {
     requestId: 'save-request-1',
     workflowId,
-    name: 'MiniMax H3 文生视频',
+    name: '文生视频',
     category: 'ai-video',
-    fileName: 'minimax-h3-t2v.json',
+    fileName: 'wen-sheng-shi-pin.json',
     fileContent: API_JSON,
     editableContent: EDITABLE_JSON,
   };
@@ -57,12 +57,13 @@ beforeEach(() => {
   vi.stubGlobal('window', { __TAURI__: {} });
   mocks.storeState.workflows = [
     {
-      id: 'builtin-minimax-h3-t2v',
-      name: 'MiniMax H3 文生视频',
+      id: 'builtin-wen-sheng-shi-pin',
+      name: '文生视频',
       category: 'ai-video',
-      fileName: 'minimax-h3-t2v.json',
+      fileName: 'wen-sheng-shi-pin.json',
       fileContent: '{}',
-      defaultNodes: { prompt: '105:104' },
+      defaultNodes: { prompt: '6' },
+      ioNodes: [{ nodeId: '6', title: 'MiniMax H3 Audio Conditioning (T8)', type: 'prompt' }],
       createdAt: 1,
     },
     {
@@ -78,19 +79,19 @@ beforeEach(() => {
 
 describe('ComfyUI 工作流保存回写', () => {
   it('内置工作流原地更新，不会存成同名副本', async () => {
-    await saveFromComfyUI('builtin-minimax-h3-t2v');
+    await saveFromComfyUI('builtin-wen-sheng-shi-pin');
 
     expect(mocks.storeState.addWorkflow).not.toHaveBeenCalled();
     const [id, updates] = mocks.storeState.updateWorkflow.mock.calls[0] as [string, Record<string, unknown>];
-    expect(id).toBe('builtin-minimax-h3-t2v');
+    expect(id).toBe('builtin-wen-sheng-shi-pin');
     expect(updates.fileContent).toBe(API_JSON);
     expect(updates.editableContent).toBe(EDITABLE_JSON);
     // 节点还在，标好的默认节点不该被冲掉
-    expect(updates.defaultNodes).toEqual({ prompt: '105:104' });
+    expect(updates.defaultNodes).toEqual({ prompt: '6' });
     expect(mocks.invoke).toHaveBeenCalledWith('complete_comfyui_workflow_save', {
       requestId: 'save-request-1',
       success: true,
-      detail: 'MiniMax H3 文生视频',
+      detail: '文生视频',
     });
   });
 

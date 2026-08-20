@@ -24,9 +24,9 @@ const workflowItemName = new Function(
 
 describe('bridge.js workflowBaseName', () => {
   it('去掉目录、扩展名和 ComfyUI 自动加的重名后缀', () => {
-    expect(workflowBaseName('minimax-h3-i2v.json')).toBe('minimax-h3-i2v');
-    expect(workflowBaseName('workflows/minimax-h3-i2v (3)')).toBe('minimax-h3-i2v');
-    expect(workflowBaseName('C:\\wf\\minimax-h3-i2v (12).json')).toBe('minimax-h3-i2v');
+    expect(workflowBaseName('wen-sheng-shi-pin.json')).toBe('wen-sheng-shi-pin');
+    expect(workflowBaseName('workflows/wen-sheng-shi-pin (3)')).toBe('wen-sheng-shi-pin');
+    expect(workflowBaseName('C:\\wf\\wen-sheng-shi-pin (12).json')).toBe('wen-sheng-shi-pin');
     expect(workflowBaseName('')).toBe('');
     expect(workflowBaseName(undefined)).toBe('');
   });

@@ -2,6 +2,7 @@
  * Canvas 画布主组件 — React Flow 画布核心，管理节点/边渲染、拖放、连线、右键菜单、空状态
  */
 import { lazy, Suspense, useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ReactFlow,
   Background,
@@ -871,9 +872,15 @@ function CanvasInner() {
     [onResizeStart, applyResizeSnap, onResizeStop],
   );
 
+  // 兼容 React Flow 的 OnNodeDrag 事件类型（React.MouseEvent）
+  const getPointerPosition = (event: ReactMouseEvent) => ({
+    clientX: event.clientX,
+    clientY: event.clientY,
+  });
+
   // 按住 Ctrl/⌘ 开始拖拽 → 在原位复制一个节点（拖动的仍是原节点，等于"拖出一个副本"）
   const handleNodeDragStart = useCallback(
-    (evt: React.MouseEvent, node: RFNode<BaseNodeData>) => {
+    (evt: ReactMouseEvent, node: RFNode<BaseNodeData>) => {
       setCanvasInteraction('node', true);
       if (node.type === 'canvas-note') commitToHistory();
       if ((evt.ctrlKey || evt.metaKey) && node.type !== 'group') {
@@ -1066,8 +1073,9 @@ function CanvasInner() {
   }, []);
 
   const handleNodeDrag = useCallback(
-    (e: React.MouseEvent, node: RFNode) => {
-      const hit = findStoryboardDropHit(node, e.clientX, e.clientY);
+    (e: ReactMouseEvent, node: RFNode) => {
+      const { clientX, clientY } = getPointerPosition(e);
+      const hit = findStoryboardDropHit(node, clientX, clientY);
       const cell = hit?.emptyCell ?? null;
       if (cell !== sbDropTarget.current) {
         clearSbDropTarget();
@@ -1076,7 +1084,7 @@ function CanvasInner() {
       // 进入宫格节点后隐藏真实节点；空格上倾斜表示可放置，占用区域保持水平。
       const url = (node.data?.imageUrl || node.data?.thumbnailUrl) as string | undefined;
       if (hit && url) {
-        setDropGhost({ url, x: e.clientX, y: e.clientY, canDrop: cell != null });
+        setDropGhost({ url, x: clientX, y: clientY, canDrop: cell != null });
         if (ghostNodeId.current !== node.id) {
           clearGhostNodeHidden();
           document.querySelector(`.react-flow__node[data-id="${node.id}"]`)?.classList.add('sb-drop-hidden');
@@ -1088,7 +1096,7 @@ function CanvasInner() {
       }
 
       // 分镜表画面格：只做高亮，不隐藏被拖的节点——绑定后它仍要留在画布上
-      const frameCell = findShotlistDropHit(node, e.clientX, e.clientY);
+      const frameCell = findShotlistDropHit(node, clientX, clientY);
       if (frameCell !== shotlistDropTarget.current) {
         clearShotlistDropTarget();
         if (frameCell) {
@@ -1102,10 +1110,11 @@ function CanvasInner() {
 
   // ── Auto group/ungroup on drag stop ──
   const handleNodeDragStop = useCallback(
-    (event: React.MouseEvent, node: RFNode) => {
+    (event: ReactMouseEvent, node: RFNode) => {
       setCanvasInteraction('node', false);
-      const cell = findStoryboardDropHit(node, event.clientX, event.clientY)?.emptyCell ?? null;
-      const frameCell = findShotlistDropHit(node, event.clientX, event.clientY);
+      const { clientX, clientY } = getPointerPosition(event);
+      const cell = findStoryboardDropHit(node, clientX, clientY)?.emptyCell ?? null;
+      const frameCell = findShotlistDropHit(node, clientX, clientY);
       clearSbDropTarget();
       clearShotlistDropTarget();
       setDropGhost(null);

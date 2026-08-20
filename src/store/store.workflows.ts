@@ -6,8 +6,9 @@ import type { AppState } from './useAppStore';
 import type { WorkflowDefinition } from '../types';
 import * as fileService from '../services/fileService';
 import {
-  pendingBuiltInWorkflows,
+  syncBuiltInWorkflows,
   withBuiltInEditableContent,
+  obsoleteBuiltInWorkflowIds,
 } from '../services/builtinWorkflows';
 
 export interface WorkflowSlice {
@@ -80,19 +81,34 @@ export const createWorkflowSlice: StateCreator<AppState, [], [], WorkflowSlice> 
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
+    // 清理已从内置规格里移除的旧内置工作流，避免列表里还出现占位符/已删模板
+    const obsoleteIds = obsoleteBuiltInWorkflowIds(mapped);
+    for (const id of obsoleteIds) {
+      fileService.deleteWorkflow(id).catch((e) => console.warn('[内置工作流] 清理旧数据失败:', e));
+    }
+    const afterCleanup = mapped.filter((workflow) => !obsoleteIds.includes(workflow.id));
     // 早先播种的内置工作流缺可编辑图，补上后 ComfyUI 才能正常打开
-    const patched = mapped.map((workflow) => {
+    const patched = afterCleanup.map((workflow) => {
       const upgraded = withBuiltInEditableContent(workflow);
       if (upgraded) {
         fileService.saveWorkflow(upgraded).catch((e) => console.warn('[内置工作流] 补可编辑图失败:', e));
       }
       return upgraded ?? workflow;
     });
-    // 首次启动把内置工作流落盘，之后它们和用户导入的工作流没有区别
-    const seeded = pendingBuiltInWorkflows(patched);
-    for (const workflow of seeded) {
+    // 首次启动把内置工作流落盘，文件内容变化时也同步更新本地数据
+    const { toAdd, toUpdate } = syncBuiltInWorkflows(patched);
+    for (const workflow of toAdd) {
       fileService.saveWorkflow(workflow).catch((e) => console.warn('[内置工作流] 持久化失败:', e));
     }
-    if (patched.length > 0 || seeded.length > 0) set({ workflows: [...seeded, ...patched] });
+    for (const workflow of toUpdate) {
+      fileService.saveWorkflow(workflow).catch((e) => console.warn('[内置工作流] 更新失败:', e));
+    }
+    const synced = [...toAdd, ...toUpdate];
+    if (patched.length > 0 || synced.length > 0) {
+      set({ workflows: [...synced, ...patched.map((w) => {
+        const updated = toUpdate.find((u) => u.id === w.id);
+        return updated ?? w;
+      })] });
+    }
   },
 });

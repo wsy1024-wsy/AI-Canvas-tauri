@@ -96,7 +96,7 @@ export function mapVideoDimensions(
     : { width: alignTo8(longSide * (w / h)), height: alignTo8(longSide) };
 }
 
-/** 将画质 + 比例映射为像素尺寸 */
+/** 将画质 + 比例映射为像素尺寸，边长按 8 对齐（ComfyUI latent 要求） */
 export function mapImageDimensions(
   imageSize: string,
   aspectRatio: string,
@@ -105,10 +105,10 @@ export function mapImageDimensions(
   const shortSide = shortSideMap[imageSize] || 1024;
 
   const [w, h] = aspectRatio.split(':').map(Number);
-  if (!w || !h) return { width: shortSide, height: shortSide };
+  if (!w || !h) return { width: alignTo8(shortSide), height: alignTo8(shortSide) };
 
   if (w >= h) {
-    return { width: Math.round(shortSide * (w / h)), height: shortSide };
+    return { width: alignTo8(shortSide * (w / h)), height: alignTo8(shortSide) };
   }
-  return { width: shortSide, height: Math.round(shortSide * (h / w)) };
+  return { width: alignTo8(shortSide), height: alignTo8(shortSide * (h / w)) };
 }

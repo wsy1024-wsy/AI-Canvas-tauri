@@ -2,6 +2,7 @@
  * useNodeSnap 节点吸附 Hook — 拖拽节点时自动吸附到其他节点的边缘、中心或等间距位置
  */
 import { createContext, useCallback, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { BaseNodeData } from '../types';
@@ -494,7 +495,7 @@ export function useNodeSnap() {
   );
 
   const onNodeDragStart = useCallback(
-    (_evt: React.MouseEvent | MouseEvent, node: Node<BaseNodeData>) => {
+    (_evt: ReactMouseEvent, node: Node<BaseNodeData>) => {
       dragStartPositions.current.set(node.id, { ...node.position });
       const state = useAppStore.getState();
       state.commitToHistory();

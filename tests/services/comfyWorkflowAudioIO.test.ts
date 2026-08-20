@@ -101,7 +101,7 @@ describe('ComfyUI audio IO injection', () => {
     expect(result).toEqual({ url: expect.stringContaining('out.flac') });
     // 音频走 ComfyUI 唯一的通用上传路由，落到 input 目录
     expect(mocks.corsSafeFetch).toHaveBeenCalledWith(
-      'http://comfy.test:8188/upload/image',
+      '/api/comfyui/upload/image',
       expect.objectContaining({ method: 'POST' }),
     );
     expect(submittedWorkflow()['1'].inputs.audio).toBe('upload_123.mp3');
@@ -146,7 +146,7 @@ describe('ComfyUI audio IO injection', () => {
     );
 
     expect(mocks.corsSafeFetch).not.toHaveBeenCalledWith(
-      'http://comfy.test:8188/upload/image',
+      '/api/comfyui/upload/image',
       expect.anything(),
     );
     expect(submittedWorkflow()['1'].inputs).toEqual({ audio_file: '/host/path/voice.wav' });

@@ -1,0 +1,121 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "65": {
+    "inputs": {
+      "samples": [
+        "70",
+        0
+      ],
+      "vae": [
+        "75",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "67": {
+    "inputs": {
+      "text": "photorealistic, 3d render, hyperrealistic digital human, 1girl, east asian face, japanese cute girl, delicate baby face, young and petite, blonde twin tails, maid headdress, heterochromia, red right eye, blue left eye, long eyelashes, black and white maid outfit, holding plush rabbit doll, sitting, detailed realistic skin, subsurface scattering, soft cinematic lighting, ultra detailed, 8k, shallow depth of field",
+      "clip": [
+        "75",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "70": {
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 7.5,
+      "sampler_name": "dpmpp_2m_sde_gpu",
+      "scheduler": "karras",
+      "denoise": 0.6,
+      "model": [
+        "75",
+        0
+      ],
+      "positive": [
+        "67",
+        0
+      ],
+      "negative": [
+        "71",
+        0
+      ],
+      "latent_image": [
+        "73",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "71": {
+    "inputs": {
+      "text": "anime, manga, cartoon, 2d, illustration, painting, hand drawn, low quality, bad anatomy, deformed, extra limbs, missing fingers, ugly, blurry, grainy, plastic skin, oversmoothed skin, text, watermark, distorted face, asymmetrical face，caucasian, western face, mature face, old, sharp facial features, deep facial contours",
+      "clip": [
+        "75",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "72": {
+    "inputs": {
+      "image": "萝莉 - 副本.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "73": {
+    "inputs": {
+      "pixels": [
+        "72",
+        0
+      ],
+      "vae": [
+        "75",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "75": {
+    "inputs": {
+      "ckpt_name": "majicMIX_realistic_v7.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  }
+}
